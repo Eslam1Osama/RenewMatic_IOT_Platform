@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RenewMatic - Greenhouse Monitoring</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        /* CSS Reset and Variables */
+        :root {
+            --primary-color: #4caf50;
+            --primary-light: #4DA6E1;
+            --secondary-color: #2e7d32;
+            --background-light: #f5f5f5;
+            --background-dark: #1a1a1a;
+            --text-light: #333;
+            --text-dark: #fff;
+            --footer-text-color: #fff;
+            --transition-speed: 0.3s;
+            --header-height: 64px;
+            --footer-height: auto;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Theme Classes */
+        .light-theme {
+            --bg-primary: var(--background-light);
+            --text-primary: var(--text-light);
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+            --nav-bg: linear-gradient(to right, #4caf50, #81c784);
+        }
+
+        .dark-theme {
+            --bg-primary: var(--background-dark);
+            --text-primary: var(--text-dark);
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+            --nav-bg: linear-gradient(to right, #2e7d32, #4caf50);
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color var(--transition-speed);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation Bar */
+        .topnav {
+            height: var(--header-height);
+            background: var(--primary-light);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Menu Button and Dropdown */
+        .menu-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f0f0f0;
+            min-width: 160px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            border-radius: 4px;
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #d1d1d1;
+            color: #000;
+        }
+
+        /* Logo Section */
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+        }
+
+        .logo-section img {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+        }
+
+        /* User Profile Section */
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-top: var(--header-height);
+            padding: 20px;
+            flex: 1;
+            margin-bottom: var(--footer-height);
+        }
+	        /* Dashboard Cards */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Charts Container */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            transition: border-color var(--transition-speed);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        /* Button Styles */
+        button[type="submit"] {
+            cursor: pointer;
+            transition: background-color var(--transition-speed);
+        }
+
+        button[type="submit"]:hover {
+            background-color: var(--primary-light);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .form-group {
+                flex-direction: column;
+            }
+
+            .form-group div {
+                flex-direction: column;
+            }
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--primary-light);
+            color: var(--footer-text-color);
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* Footer Sections */
+        .footer-section {
+            width: 100%;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        /* Footer Links */
+        .footer-section h3 {
+            margin-bottom: 10px;
+            color: var(--footer-text-color);
+        }
+
+        /* Footer Links List */
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 8px;
+        }
+
+        .footer-section ul li a {
+            color: var(--footer-text-color);
+            text-decoration: none;
+            transition: color var(--transition-speed);
+        }
+
+        .footer-section ul li a:hover {
+            text-decoration: underline;
+        }
+
+        /* Bottom Footer */
+        .footer-bottom {
+            background: var(--primary-light);
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 0;
+            color: var(--footer-text-color);
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .logo-section span {
+                display: none;
+            }
+
+            .user-section .user-name {
+                display: none;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Existing styles from previous version remain the same */
+        .dashboard-grid, .charts-container, .card {
+            /* Keep existing styles */
+        }
+
+        .user-name {
+            color: var(--text-dark); /* Set to white */
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <!-- Top Navigation Bar -->
+    <nav class="topnav">
+        <div class="dropdown">
+            <button class="menu-button" id="menuButton">
+                ☰ Menu
+            </button>
+            <div class="dropdown-content" id="menuDropdown">
+                <a href="#" data-page="status">Greenhouse Status</a>
+                <a href="#" data-page="control">Control Dashboard</a>
+                <a href="#" data-page="admin">Admin Dashboard</a>
+            </div>
+        </div>
+
+        <div class="logo-section">
+            <img src="assets/logo (18) (4).png" alt="RenewMatic Logo">
+            <span>RenewMatic</span>
+        </div>
+
+        <div class="user-section">
+            <div class="dropdown">
+                <div class="user-profile" id="userButton">
+                    <div class="user-avatar">
+                        <img src="assets/CharacterA.png" alt="User" style="width: 100%; height: auto; border-radius: 50%;">
+                    </div>
+                    <span class="user-name">John Doe</span>
+                </div>
+                <div class="dropdown-content" id="userDropdown">
+                    <a href="#">Profile</a>
+                    <a href="#">Settings</a>
+                    <a href="#">Logout</a>
+                </div>
+            </div>
+            <button class="theme-toggle" id="themeToggle">
+                🌓
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Status Dashboard -->
+        <div class="page" id="statusPage">
+            <h1>Greenhouse Status Dashboard</h1>
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>Temperature</h3>
+                    <h2>24.5°C</h2>
+                    <p>+1.2°C from yesterday</p>
+                </div>
+                <div class="card">
+                    <h3>Humidity</h3>
+                    <h2>62%</h2>
+                    <p>-3% from yesterday</p>
+                </div>
+                <div class="card">
+                    <h3>pH Level</h3>
+                    <h2>6.5</h2>
+                    <p>Optimal range</p>
+                </div>
+                <div class="card">
+                    <h3>Light Intensity</h3>
+                    <h2>750 lux</h2>
+                    <p>+50 lux from yesterday</p>
+                </div>
+                <div class="card">
+                    <h3>TDS (ppm)</h3>
+                    <h2>100 ppm</h2>
+                    <p>+5 ppm from yesterday</p>
+                </div>
+                <div class="card">
+                    <h3>Water Temperature</h3>
+                    <h2>22°C</h2>
+                    <p>+1°C from yesterday</p>
+                </div>
+            </div>
+            <div class="charts-container">
+                <div class="card">
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+                <div class="card">
+                    <canvas id="humidityChart"></canvas>
+                </div>
+                <div class="card">
+                    <canvas id="tdsChart"></canvas>
+                </div>
+                <div class="card">
+                    <canvas id="phChart"></canvas>
+                </div>
+                <div class="card">
+                    <canvas id="waterTemperatureChart"></canvas>
+                </div>
+                <div class="card">
+                    <canvas id="lightIntensityChart"></canvas>
+                </div>
+                <div class="card">
+                    <canvas id="co2LevelChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Dashboard -->
+        <div class="page" id="controlPage" style="display: none;">
+            <h1>Control Dashboard</h1>
+            <div class="card">
+                <h2>Greenhouse Settings</h2>
+                <form id="greenhouseSettingsForm">
+                    <div class="form-group">
+                        <label for="temperatureRange">Temperature Range (°C)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="tempMin" class="form-control" placeholder="Min" required>
+                            <input type="number" id="tempMax" class="form-control" placeholder="Max" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="humidityRange">Humidity Range (%)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="humidityMin" class="form-control" placeholder="Min" required>
+                            <input type="number" id="humidityMax" class="form-control" placeholder="Max" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="tdsRange">TDS Range (ppm)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="tdsMin" class="form-control" placeholder="Min" required>
+                            <input type="number" id="tdsMax" class="form-control" placeholder="Max" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="phLevel">pH Level</label>
+                        <input type="number" id="phLevel" class="form-control" placeholder="Optimal pH" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="waterTempRange">Water Temperature Range (°C)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="waterTempMin" class="form-control" placeholder="Min" required>
+                            <input type="number" id="waterTempMax" class="form-control" placeholder="Max" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="lightIntensity">Light Intensity (lux)</label>
+                        <input type="number" id="lightIntensity" class="form-control" placeholder="Optimal Light Intensity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="co2Level">CO2 Level (ppm)</label>
+                        <input type="number" id="co2Level" class="form-control" placeholder="Optimal CO2 Level" required>
+                    </div>
+                    <button type="submit" class="form-control" style="background-color: var(--primary-color); color: white;">Save Settings</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div class="page" id="adminPage" style="display: none;">
+            <h1>Admin Dashboard</h1>
+            <div class="card">
+                <h2>User Management</h2>
+                
+                <!-- Search Bar -->
+                <div class="form-group">
+                    <input type="text" id="userSearch" class="form-control" placeholder="Search Users..." onkeyup="filterUsers()">
+                </div>
+
+                <table style="width: 100%">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTable">
+                        <!-- User rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Modify Customer Dashboard Settings</h2>
+                <form id="customerDashboardSettingsForm">
+                    <div class="form-group">
+                        <label for="customerSetting1">Setting 1</label>
+                        <input type="text" id="customerSetting1" class="form-control" placeholder="Enter value for Setting 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerSetting2">Setting 2</label>
+                        <input type="text" id="customerSetting2" class="form-control" placeholder="Enter value for Setting 2">
+                    </div>
+                    <button type="submit" class="form-control" style="background-color: var(--primary-color); color: white;">Update Customer Dashboard Settings</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>Modify Settings Dashboard</h2>
+                <form id="settingsDashboardForm">
+                    <div class="form-group">
+                        <label for="settings1">Settings 1</label>
+                        <input type="text" id="settings1" class="form-control" placeholder="Enter value for Settings 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="settings2">Settings 2</label>
+                        <input type="text" id="settings2" class="form-control" placeholder="Enter value for Settings 2">
+                    </div>
+                    <button type="submit" class="form-control" style="background-color: var(--primary-color); color: white;">Update Settings Dashboard</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-section">
+            <div>
+                <h3>About Us</h3>
+                <ul>
+                    <li><a href="#">Our Story</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Sustainability</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3>Customer Service</h3>
+                <ul>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">Returns</a></li>
+                    <li><a href="#">Shipping Info</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">FAQ</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Your Company. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Dropdown Toggle Functions
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdowns when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.menu-button') && !event.target.matches('.user-profile')) {
+                const dropdowns = document.getElementsByClassName('dropdown-content');
+                for (const dropdown of dropdowns) {
+                    if (dropdown.classList.contains('show')) {
+                        dropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        // Menu Button Click Handler
+        document.getElementById('menuButton').addEventListener('click', () => {
+            toggleDropdown('menuDropdown');
+        });
+
+        // User Profile Click Handler
+        document.getElementById('userButton').addEventListener('click', () => {
+            toggleDropdown('userDropdown');
+        });
+
+        // Theme Toggle Functionality
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            document.body.classList.toggle('light-theme');
+            themeToggle.textContent = document.body.classList.contains('dark-theme') ? '🌞' : '🌓';
+        });
+
+        // Navigation Functionality
+        const navLinks = document.querySelectorAll('[data-page]');
+        const pages = document.querySelectorAll('.page');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetPage = link.dataset.page;
+                
+                // Show/hide pages
+                pages.forEach(page => {
+                    page.style.display = page.id === `${targetPage}Page` ? 'block' : 'none';
+                });
+
+                // Close dropdown after selection
+                document.getElementById('menuDropdown').classList.remove('show');
+            });
+        });
+        // Chart Initialization
+        const initCharts = () => {
+            // Temperature Chart
+            const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+            new Chart(tempCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: [23, 24, 25, 26, 25, 24],
+                        borderColor: '#00796b',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Temperature Trend'
+                        }
+                    }
+                }
+            });
+
+            // Humidity Chart
+            const humCtx = document.getElementById('humidityChart').getContext('2d');
+            new Chart(humCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'Humidity (%)',
+                        data: [60, 62, 65, 63, 61, 60],
+                        borderColor: '#4caf50',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Humidity Trend'
+                        }
+                    }
+                }
+            });
+
+            // TDS Chart
+            const tdsCtx = document.getElementById('tdsChart').getContext('2d');
+            new Chart(tdsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'TDS (ppm)',
+                        data: [100, 105, 110, 108, 107, 106], // Sample data
+                        borderColor: '#3f51b5',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'TDS Trend'
+                        }
+                    }
+                }
+            });
+
+            // pH Chart
+            const phCtx = document.getElementById('phChart').getContext('2d');
+            new Chart(phCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'pH Level',
+                        data: [6.5, 6.6, 6.4, 6.5, 6.7, 6.6], // Sample data
+                        borderColor: '#ff9800',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'pH Level Trend'
+                        }
+                    }
+                }
+            });
+
+            // Water Temperature Chart
+            const waterTempCtx = document.getElementById('waterTemperatureChart').getContext('2d');
+            new Chart(waterTempCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'Water Temperature (°C)',
+                        data: [21, 22, 23, 22, 21, 20], // Sample data
+                        borderColor: '#2196f3',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Water Temperature Trend'
+                        }
+                    }
+                }
+            });
+
+            // Light Intensity Chart
+            const lightCtx = document.getElementById('lightIntensityChart').getContext('2d');
+            new Chart(lightCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'Light Intensity (lux)',
+                        data: [700, 720, 750, 780, 760, 740], // Sample data
+                        borderColor: '#ffeb3b',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Light Intensity Trend'
+                        }
+                    }
+                }
+            });
+
+            // CO2 Level Chart
+            const co2Ctx = document.getElementById('co2LevelChart').getContext('2d');
+            new Chart(co2Ctx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'CO2 Level (ppm)',
+                        data: [400, 410, 420, 430, 425, 415], // Sample data
+                        borderColor: '#f44336',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'CO2 Level Trend'
+                        }
+                    }
+                }
+            });
+        };
+
+        // Initialize charts when the page loads
+        document.addEventListener('DOMContentLoaded', initCharts);
+
+        // Sample user data
+        const users = [
+            { name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active' },
+            { name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'Active' },
+            { name: 'Alice Johnson', email: 'alice@example.com', role: 'User', status: 'Inactive' },
+            { name: 'Bob Brown', email: 'bob@example.com', role: 'Admin', status: 'Active' }
+        ];
+
+        // Populate user table
+        const userTable = document.getElementById('userTable');
+        const populateUserTable = (filteredUsers) => {
+            userTable.innerHTML = ''; // Clear existing rows
+            filteredUsers.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.role}</td>
+                    <td>${user.status}</td>
+                    <td>
+                        <button onclick="editUser('${user.email}')">Edit</button>
+                        <button onclick="deleteUser('${user.email}')">Delete</button>
+                    </td>
+                `;
+                userTable.appendChild(row);
+            });
+        };
+
+        // Filter users based on search input
+        const filterUsers = () => {
+            const searchValue = document.getElementById('userSearch').value.toLowerCase();
+            const filteredUsers = users.filter(user => 
+                user.name.toLowerCase().includes(searchValue) || 
+                user.email.toLowerCase().includes(searchValue)
+            );
+            populateUserTable(filteredUsers);
+        };
+
+        // Initial population of user table
+        populateUserTable(users);
+
+        // User management functions
+        function editUser(email) {
+            console.log('Editing user:', email);
+        }
+
+        function deleteUser(email) {
+            console.log('Deleting user:', email);
+        }
+
+        // Handle customer dashboard settings form submission
+        document.getElementById('customerDashboardSettingsForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const setting1 = document.getElementById('customerSetting1').value;
+            const setting2 = document.getElementById('customerSetting2').value;
+            console.log('Customer Dashboard Settings Updated:', { setting1, setting2 });
+        });
+
+        // Handle settings dashboard form submission
+        document.getElementById('settingsDashboardForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const settings1 = document.getElementById('settings1').value;
+            const settings2 = document.getElementById('settings2').value;
+            console.log('Settings Dashboard Updated:', { settings1, settings2 });
+        });
+    </script>
+    </script>
+</body>
+</html>
